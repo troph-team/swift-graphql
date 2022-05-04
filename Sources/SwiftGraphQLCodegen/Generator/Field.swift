@@ -222,7 +222,7 @@ private extension Field {
                 if let data = data.\(name)[field.alias!] {
                     return data
                 }
-                throw HttpError.badpayload
+                throw GraphQLResponseError.badpayload(GraphQLPayloadError(reason: "unexpected empty field while decoding"))
                 """
             }
         case .interface, .object, .union:
@@ -236,7 +236,7 @@ private extension Field {
                 if let data = data.\(name)[field.alias!] {
                     return try selection.decode(data: data)
                 }
-                throw HttpError.badpayload
+                throw GraphQLResponseError.badpayload(GraphQLPayloadError(reason: "unexpected empty field while decoding"))
                 """
             }
         }

@@ -155,12 +155,22 @@ public struct GraphQLPayloadError: Error {
     var reason: String
     var response: URLResponse? = nil
     
+    public init(reason: String, response: URLResponse? = nil) {
+        self.reason = reason
+        self.response = response
+    }
+    
     static let nonNullFailed: GraphQLPayloadError = GraphQLPayloadError(reason: "non-null assumption failed: selection is actually null; failing because of nonNullOrFail")
 }
 
 public struct GraphQLTransportError: Error {
     var reason: String
     var response: URLResponse? = nil
+    
+    public init(reason: String, response: URLResponse? = nil) {
+        self.reason = reason
+        self.response = response
+    }
 }
 
 extension GraphQLResponseError: Equatable {
