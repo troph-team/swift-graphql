@@ -184,7 +184,7 @@ public enum HttpMethod: String, Equatable {
 }
 
 public enum GraphQLTransportResponse: Equatable {
-    case http(URLResponse?)
+    case http(HTTPURLResponse?)
     // accessing websocket transport response is not yet implemented
     case websocket
     // when running unit test there's no associated response with that result, so we use this dummy value to ensure they are equatable
