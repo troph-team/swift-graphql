@@ -121,7 +121,16 @@ private func send<Type, TypeLock>(
         // Try to serialize the response.
         do {
             if let data = data {
-                let result = try GraphQLResult(data, associated: .absent, with: selection)
+                // if making a http/https request, response is actually HTTPURLResponse https://developer.apple.com/documentation/foundation/urlsession/1407613-datatask
+                let associatedResponse: GraphQLTransportResponse = {
+                    if let httpUrlResponse = response as? HTTPURLResponse {
+                        return GraphQLTransportResponse.http(httpUrlResponse)
+                    } else {
+                        return GraphQLTransportResponse.absent
+                    }
+                }()
+                
+                let result = try GraphQLResult(data, associated: associatedResponse, with: selection)
                 return completionHandler(.success(result))
             } else {
                 return completionHandler(.failure(.badpayload(GraphQLPayloadError(reason: "response data is empty (\(String(describing: data)))", response: response))))
