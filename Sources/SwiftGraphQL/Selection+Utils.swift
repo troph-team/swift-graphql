@@ -92,7 +92,7 @@ public extension Selection where TypeLock: Decodable {
                 if let data = data {
                     return try self.decode(data: data)
                 }
-                throw SwiftGraphQL.HttpError.badpayload
+                throw SwiftGraphQL.GraphQLResponseError.badpayload(.nonNullFailed)
             case .mocking:
                 return self.mock()
             }

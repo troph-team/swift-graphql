@@ -24,6 +24,7 @@ final class SelectionTests: XCTestCase {
 
         let result = try GraphQLResult(
             data,
+            associated: .absent,
             with: selection.nullable
         )
 
@@ -51,6 +52,7 @@ final class SelectionTests: XCTestCase {
 
         let result = try GraphQLResult(
             data,
+            associated: .absent,
             with: selection.list.nonNullOrFail
         )
 
@@ -82,11 +84,12 @@ final class SelectionTests: XCTestCase {
             // Throwing function.
             try GraphQLResult(
                 data,
+                associated: .absent,
                 with: selection.nonNullOrFail
             )
         ) { (error) -> Void in
             // Errors with wrong data.
-            XCTAssertEqual(error as? HttpError, HttpError.badpayload)
+            XCTAssertEqual(error as? GraphQLResponseError, GraphQLResponseError.badpayload(.nonNullFailed))
         }
     }
 
@@ -110,6 +113,7 @@ final class SelectionTests: XCTestCase {
 
         let result = try GraphQLResult(
             data,
+            associated: .absent,
             with: selection.map { $0 == "right" }.nonNullOrFail
         )
 

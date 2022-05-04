@@ -105,19 +105,30 @@ private func send<Type, TypeLock>(
         if let error = error {
             return completionHandler(.failure(.network(error)))
         }
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200 ... 299).contains(httpResponse.statusCode)
-        else {
-            return completionHandler(.failure(.badstatus))
+        
+        guard let response = response else {
+            return completionHandler(.failure(.badpayload(GraphQLPayloadError(reason: "response is nil", response: response))))
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            return completionHandler(.failure(.badpayload(GraphQLPayloadError(reason: "response empty or malformed: cannot cast response to HTTPURLResponse?. Is the response nil?", response: response))))
+        }
+        
+        guard (200 ... 299).contains(httpResponse.statusCode) else {
+            return completionHandler(.failure(.badstatus(GraphQLTransportError(reason: "response status code is not in succeed range: expect 200-299, got \(httpResponse.statusCode)", response: response))))
         }
 
         // Try to serialize the response.
-        if let data = data, let result = try? GraphQLResult(data, with: selection) {
-            return completionHandler(.success(result))
+        do {
+            if let data = data {
+                let result = try GraphQLResult(data, associated: .absent, with: selection)
+                return completionHandler(.success(result))
+            } else {
+                return completionHandler(.failure(.badpayload(GraphQLPayloadError(reason: "response data is empty (\(String(describing: data)))", response: response))))
+            }
+        } catch {
+            return completionHandler(.failure(.badpayload(GraphQLPayloadError(reason: "response deserialization failed: \(String(describing: error))", response: response))))
         }
-
-        return completionHandler(.failure(.badpayload))
     }
 
     // Construct a session data task.
@@ -128,21 +139,32 @@ private func send<Type, TypeLock>(
     
 }
 
-
 // MARK: - Request type aliaii
 
 /// Represents an error of the actual request.
-public enum HttpError: Error {
+public enum GraphQLResponseError: Error {
     case badURL
     case timeout
     case network(Error)
-    case badpayload
-    case badstatus
+    case badpayload(GraphQLPayloadError)
+    case badstatus(GraphQLTransportError)
     case cancelled
 }
 
-extension HttpError: Equatable {
-    public static func == (lhs: SwiftGraphQL.HttpError, rhs: SwiftGraphQL.HttpError) -> Bool {
+public struct GraphQLPayloadError: Error {
+    var reason: String
+    var response: URLResponse? = nil
+    
+    static let nonNullFailed: GraphQLPayloadError = GraphQLPayloadError(reason: "non-null assumption failed: selection is actually null; failing because of nonNullOrFail")
+}
+
+public struct GraphQLTransportError: Error {
+    var reason: String
+    var response: URLResponse? = nil
+}
+
+extension GraphQLResponseError: Equatable {
+    public static func == (lhs: SwiftGraphQL.GraphQLResponseError, rhs: SwiftGraphQL.GraphQLResponseError) -> Bool {
         // Equals if they are of the same type, different otherwise.
         switch (lhs, rhs) {
         case (.badURL, badURL),
@@ -156,14 +178,21 @@ extension HttpError: Equatable {
     }
 }
 
-
 public enum HttpMethod: String, Equatable {
     case get = "GET"
     case post = "POST"
 }
 
+public enum GraphQLTransportResponse: Equatable {
+    case http(URLResponse?)
+    // accessing websocket transport response is not yet implemented
+    case websocket
+    // when running unit test there's no associated response with that result, so we use this dummy value to ensure they are equatable
+    case absent
+}
+
 /// A return value that might contain a return value as described in GraphQL spec.
-public typealias Response<Type, TypeLock> = Result<GraphQLResult<Type, TypeLock>, HttpError>
+public typealias Response<Type, TypeLock> = Result<GraphQLResult<Type, TypeLock>, GraphQLResponseError>
 
 /// A dictionary of key-value pairs that represent headers and their values.
 public typealias HttpHeaders = [String: String]

@@ -4,22 +4,24 @@ import Foundation
 
 public struct GraphQLResult<Type, TypeLock> {
     public let data: Type
+    public let response: GraphQLTransportResponse
     public let errors: [GraphQLError]?
 }
 
 extension GraphQLResult: Equatable where Type: Equatable, TypeLock: Decodable {}
 
 extension GraphQLResult where TypeLock: Decodable {
-    init(_ response: Data, with selection: Selection<Type, TypeLock?>) throws {
+    init(_ data: Data, associated response: GraphQLTransportResponse, with selection: Selection<Type, TypeLock?>) throws {
         // Decodes the data using provided selection.
         do {
             let decoder = JSONDecoder()
-            let response = try decoder.decode(GraphQLResponse.self, from: response)
-            self.data = try selection.decode(data: response.data)
-            self.errors = response.errors
+            let decoded = try decoder.decode(GraphQLResponse.self, from: data)
+            self.data = try selection.decode(data: decoded.data)
+            self.response = response
+            self.errors = decoded.errors
         } catch {
             // Catches all errors and turns them into a bad payload SwiftGraphQL error.
-            throw HttpError.badpayload
+            throw GraphQLResponseError.badpayload(.init(reason: "cannot deserialize response: either JSON or GraphQL deserialization failed for message data \(String(describing: data)): \(error)"))
         }
     }
 
@@ -28,10 +30,11 @@ extension GraphQLResult where TypeLock: Decodable {
         do {
             let response: GraphQLResponse = try webSocketMessage.decodePayload()
             self.data = try selection.decode(data: response.data)
+            self.response = .websocket
             self.errors = response.errors
         } catch {
             // Catches all errors and turns them into a bad payload SwiftGraphQL error.
-            throw HttpError.badpayload
+            throw GraphQLResponseError.badpayload(.init(reason: "cannot deserialize websocket message: either JSON or GraphQL deserialization failed for message \(String(describing: webSocketMessage)): \(error)"))
         }
     }
 
