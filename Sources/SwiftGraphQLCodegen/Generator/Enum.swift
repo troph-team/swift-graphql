@@ -35,10 +35,10 @@ extension EnumType {
 
 extension EnumValue {
     /// Returns an enum case definition.
+    /// We deleted \(availability) to avoid enum iterable error
     fileprivate var declaration: String {
         """
         \(docs)
-        \(availability)
         case \(name.camelCase.normalize) = "\(name)"
         """
     }
