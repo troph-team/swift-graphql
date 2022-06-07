@@ -161,8 +161,8 @@ public enum GraphQLResponseError: Error {
 }
 
 public struct GraphQLPayloadError: Error {
-    var reason: String
-    var response: URLResponse? = nil
+    public var reason: String
+    public var response: URLResponse? = nil
     
     public init(reason: String, response: URLResponse? = nil) {
         self.reason = reason
@@ -173,8 +173,8 @@ public struct GraphQLPayloadError: Error {
 }
 
 public struct GraphQLTransportError: Error {
-    var reason: String
-    var response: URLResponse? = nil
+    public var reason: String
+    public var response: URLResponse? = nil
     
     public init(reason: String, response: URLResponse? = nil) {
         self.reason = reason
